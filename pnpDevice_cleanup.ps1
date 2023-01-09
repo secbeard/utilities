@@ -1,11 +1,8 @@
-# Get-Module *pnp* -ListAvailable
 Import-Module pnpdevice
-@(Get-PnpDevice).Where({ ($_.present -ne $true) }) | Select-Object -Property Name,Description,Manufacturer,Present,PNPClass,PNPDeviceID | Out-GridView -PassThru | foreach ($currentItemName in $collection) {
-    <# $currentItemName is the current item #>
-} ({ $cmdLine = 'pnputil /remove-device ' + '"' + $_.pnpdeviceid + '"'; Invoke-Expression -Command $cmdLine })
+@(Get-PnpDevice).Where({ ($_.present -ne $true) }) | Select-Object -Property Name,Description,Manufacturer,Present,PNPClass,PNPDeviceID | Out-GridView -PassThru | foreach ({ $cmdLine = 'pnputil /remove-device ' + '"' + $_.pnpdeviceid + '"'; Invoke-Expression -Command $cmdLine })
 
 <# 
-
+Get-Module *pnp* -ListAvailable
 #pnputil /enum-devices /disconnected
 #pnputil /remove-device "USB\VID_045E&PID_00DB\6&870CE29&0&1"
 
