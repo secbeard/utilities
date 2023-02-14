@@ -38,10 +38,10 @@ foreach ( $r in $dnsRecords.Where({$_.Hostname -notmatch '^@|^DomainDnsZones$|^F
     
 }
 
-$stale | Out-GridView | Out-GridView -PassThru -Title "Select records to delete"
+$delete = $stale | Out-GridView -PassThru -Title "Select records to delete"
 $stale | Add-Member -MemberType NoteProperty -Name deleteDate -Value $null
 
-foreach ($s in $stale) {
+foreach ($s in $delete) {
     Write-Host "removing record: $($s.HostName)"
     Remove-DnsServerResourceRecord -ComputerName $computerName -ZoneName $zone -RRType $s.RecordType  -Name $s.hostname -Force
     
