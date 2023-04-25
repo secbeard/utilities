@@ -1,3 +1,63 @@
+function dnsZone-backup() {
+param(
+    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='ComputerName, usually a domain controller, can be obtained with: "Get-ADDomainController -Service PrimaryDC -Discover"' )]
+    [string]$computerName,
+    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Name of the DNS zone to work with, current domain zone name can be obtained with: "(Get-ADDomain).dnsroot"')]
+    [string]$zoneName,
+    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Backup file literal path')]
+    [string]$filePath,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Apply change, otherwise simulation')]
+    [switch]$apply
+
+)
+    Get-DnsServerResourceRecord -ComputerName $computerName -ZoneName $zoneName | export-csv -path $filePath -NoTypeInformation
+}
+
+function dnsZone-restore() {
+param(
+    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='ComputerName, usually a domain controller, can be obtained with: "Get-ADDomainController -Service PrimaryDC -Discover"' )]
+    [string]$computerName,
+    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Name of the DNS zone to work with, current domain zone name can be obtained with: "(Get-ADDomain).dnsroot"')]
+    [string]$zoneName,
+    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Backup file literal path')]
+    [string]$filePath,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Apply change, otherwise simulation')]
+    [switch]$apply
+
+)
+    $restore = Import-Csv -Path $filePath | Out-GridView -PassThru -Title "Select record to restore"
+    foreach ($r in $restore) {
+
+
+        $rHostname = ($r.hostname.split("."))[0]
+
+        $computerName
+        $zoneName
+        $rHostname
+
+
+        switch ($r.RecordType) {
+            'a' { Add-DnsServerResourceRecord -ComputerName $computerName -ZoneName $zoneName -AllowUpdateAny -Name $rHostname -IPv4Address $r.recordData -TimeToLive $r.TimeToLive -A }
+
+            default { write-host -ForegroundColor Yellow "Unmanaged record type: $($r.hostname)" }
+        }
+
+        if ( ($Error[0].InvocationInfo.MyCommand.Name -eq "Add-DnsServerResourceRecord") -and ($Error[0].Exception.Message.Contains($r.hostname)) ) {
+            Write-Host -ForegroundColor Yellow "failed restoring record: $($r.HostName)"
+        } else { 
+            Write-Host -ForegroundColor Cyan "record restored: $($r.HostName)"
+        }
+
+    }
+}
+
+
+
+
+
+
+
+
 function computer-exists([string]$computerName) {
     if (Get-ADComputer -Filter {name -eq $computerName }) { return $true }
     else { return $false }
