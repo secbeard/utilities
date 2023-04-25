@@ -36,6 +36,8 @@ param(
             'cname' { Add-DnsServerResourceRecord -CName -ComputerName $computerName -ZoneName $zoneName -Name $rHostname -TimeToLive $r.TimeToLive -HostNameAlias $r.RecordData.HostNameAlias }
 
             'ns' { Add-DnsServerResourceRecord -NS -ComputerName $computerName -ZoneName $zoneName -TimeToLive $r.TimeToLive -Name $rHostname -NameServer $r.RecordData.NameServer }
+            
+            'mx' { Add-DnsServerResourceRecord -MX -ComputerName $computerName -ZoneName $zoneName -TimeToLive $r.TimeToLive -Name $rHostname -MailExchange $r.RecordData.MailExchange -Preference $r.RecordData.Preference }
 
             'srv' {
                 Add-DnsServerResourceRecord -Srv -ComputerName $computerName -ZoneName $zoneName `
