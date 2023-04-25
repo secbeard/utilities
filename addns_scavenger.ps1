@@ -1,43 +1,47 @@
 function dnsZone-backup() {
 param(
-    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='ComputerName, usually a domain controller, can be obtained with: "Get-ADDomainController -Service PrimaryDC -Discover"' )]
-    [string]$computerName,
-    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Name of the DNS zone to work with, current domain zone name can be obtained with: "(Get-ADDomain).dnsroot"')]
-    [string]$zoneName,
-    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Backup file literal path')]
-    [string]$filePath,
-    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Apply change, otherwise simulation')]
-    [switch]$apply
-
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='ComputerName, usually a domain controller, can be obtained with: "Get-ADDomainController -Service PrimaryDC -Discover"' )]
+    [string]$computerName=(Get-ADDomainController -Service PrimaryDC -Discover).hostname[0] ,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Name of the DNS zone to work with, current domain zone name can be obtained with: "(Get-ADDomain).dnsroot"')]
+    [string]$zoneName = (Get-ADDomain).dnsroot ,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Backup file literal path')]
+    [string]$filePath="$($Env:USERPROFILE)\Documents\dnsBackup-$zoneName.xml"
 )
-    Get-DnsServerResourceRecord -ComputerName $computerName -ZoneName $zoneName | export-csv -path $filePath -NoTypeInformation
+    Get-DnsServerResourceRecord -ComputerName $computerName -ZoneName $zoneName | Export-Clixml -Depth 100 -Path $filePath -Force
 }
 
+
 function dnsZone-restore() {
+
 param(
-    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='ComputerName, usually a domain controller, can be obtained with: "Get-ADDomainController -Service PrimaryDC -Discover"' )]
-    [string]$computerName,
-    [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Name of the DNS zone to work with, current domain zone name can be obtained with: "(Get-ADDomain).dnsroot"')]
-    [string]$zoneName,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='ComputerName, usually a domain controller, can be obtained with: "Get-ADDomainController -Service PrimaryDC -Discover"' )]
+    [string]$computerName=(Get-ADDomainController -Service PrimaryDC -Discover).hostname[0] ,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Name of the DNS zone to work with, current domain zone name can be obtained with: "(Get-ADDomain).dnsroot"')]
+    [string]$zoneName = (Get-ADDomain).dnsroot ,
     [parameter(Mandatory=$true,ValueFromPipeline=$false,HelpMessage='Backup file literal path')]
-    [string]$filePath,
-    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Apply change, otherwise simulation')]
-    [switch]$apply
+    [string]$filePath ,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Strip domain name, will split domain no "." and only keep the first record')]
+    [switch]$splitDot
 
 )
-    $restore = Import-Csv -Path $filePath | Out-GridView -PassThru -Title "Select record to restore"
+    $restore = Import-Clixml -Path $filePath | Out-GridView -PassThru -Title "Select record to restore"
     foreach ($r in $restore) {
 
-
-        $rHostname = ($r.hostname.split("."))[0]
-
-        $computerName
-        $zoneName
-        $rHostname
-
+        if ($stripDomain) { $rHostname = ($r.hostname.split("."))[0] }
+        else { $rHostname = $r.HostName }
 
         switch ($r.RecordType) {
-            'a' { Add-DnsServerResourceRecord -ComputerName $computerName -ZoneName $zoneName -AllowUpdateAny -Name $rHostname -IPv4Address $r.recordData -TimeToLive $r.TimeToLive -A }
+            'a' { Add-DnsServerResourceRecord -A -ComputerName $computerName -ZoneName $zoneName -AllowUpdateAny -Name $rHostname -TimeToLive $r.TimeToLive -IPv4Address $r.recordData.IPv4Address.IPAddressToString }
+
+            'cname' { Add-DnsServerResourceRecord -CName -ComputerName $computerName -ZoneName $zoneName -Name $rHostname -TimeToLive $r.TimeToLive -HostNameAlias $r.RecordData.HostNameAlias }
+
+            'ns' { Add-DnsServerResourceRecord -NS -ComputerName $computerName -ZoneName $zoneName -TimeToLive $r.TimeToLive -Name $rHostname -NameServer $r.RecordData.NameServer }
+
+            'srv' {
+                Add-DnsServerResourceRecord -Srv -ComputerName $computerName -ZoneName $zoneName `
+                 -TimeToLive $r.TimeToLive -Name $rHostname -DomainName $r.RecordData.DomainName `
+                 -Priority $r.RecordData.Priority -Weight $r.RecordData.Weight -port $r.RecordData.Port
+            }
 
             default { write-host -ForegroundColor Yellow "Unmanaged record type: $($r.hostname)" }
         }
@@ -50,9 +54,6 @@ param(
 
     }
 }
-
-
-
 
 
 
