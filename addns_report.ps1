@@ -1,4 +1,13 @@
 
+$message = "The DNS server successfully completed transfer of version 3957916 of zone fondsftq.com to the DNS server at 172.17.20.221"
+
+foreach ($s in Get-ADDomainController -Filter *) {
+    Write-Host -ForegroundColor Green $s.HostName
+
+    @(Get-DnsServerZone | Where-Object { ($_.zonetype -eq "primary") -and ($_.isReverseLookupZone -eq "false")} ).ForEach({ Get-DnsServerZoneTransferPolicy $_.zonename })
+    #Invoke-Command -Authentication Kerberos -ComputerName $s.HostName -ScriptBlock { Get-WinEvent -FilterHashtable @{ LogName="DNS Server";id=6001;starttime=$((get-date).AddDays(-7).ToShortDateString());endtime=$((get-date).ToShortDateString()) }| foreach({ ($_.message.Split("at"))[-1] }) | Group-Object }
+}
+
 
 Get-DnsServerZone
 
