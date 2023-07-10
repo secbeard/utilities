@@ -37,12 +37,17 @@ param(
     $sharePortionArray = [System.Collections.ArrayList]@(get-randomShare -max $length -count $charCodes.Count)
     $randomCharArray = [System.Collections.ArrayList]@()
     foreach ($ctype in $charCodes.GetEnumerator()) {
-        #$ctype.Value.asciiCodes | Get-Random -Count $sharePortionArray[0] | % {[char]$_}
         $ctype.Value.asciiCodes | Get-Random -Count $sharePortionArray[0] | foreach { $randomCharArray.Add($_) | Out-Null }
         $sharePortionArray.RemoveAt(0)
     }
 
-    if ($toClip) { -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_}) | clip }
-    else { return -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_}) }
+    if (($setSeed.Length -gt 0) -and $confirmSeeding) {
+        if ($toClip) { $setSeed | clip }
+        else { return $setSeed }
+    } else { # if ($setSeed -and $confirmSeeding) {
+        if ($toClip) { -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_}) | clip }
+        else { return -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_}) }
+    }
 }
+
 
