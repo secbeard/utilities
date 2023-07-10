@@ -1,0 +1,47 @@
+Function get-randomPascal {
+param(
+    [parameter(Mandatory=$false,ValueFromPipeline=$true,HelpMessage='Lenght of the output')]
+    [int]$length = 20,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Seed to predict the password, this is for testing only the function will return the seed value as the password')]
+    [string]$setSeed,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Seed to predict the password, this is for testing only the function will return the seed value as the password')]
+    [switch]$confirmSeeding,
+    [switch]$lower = $true,
+    [switch]$upper,
+    [switch]$numeric,
+    [switch]$special,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Copy result to clip board')]
+    [switch]$toClip
+)  
+    function get-randomShare([int]$max,[int]$count,[int]$min=1) { 
+        $decreasingMax = $max
+        $shareArray=[System.Collections.ArrayList]@()
+        while (($decreasingMax -gt $min) -and ($count -gt $min)) {
+            [int]$sharePart = Get-Random -Minimum 1 -Maximum $($decreasingMax - $count)
+            $decreasingMax-=$sharePart
+            $count-=1
+            $shareArray.add($sharePart) | Out-Null
+            #write-host "sharePart: $sharePart decreasingMax: $decreasingMax count: $count`n"
+        }
+        $shareArray.Add( ($max - ($shareArray | Measure-Object -Sum).sum) ) | Out-Null
+        #Write-Host -ForegroundColor Yellow $shareArray
+        return $shareArray | Sort-Object {Get-Random}
+    }
+
+    $charCodes = @{}
+    if ($lower) { $charCodes.lower = @{ count = 0; asciiCodes = (97..122) } }
+    if ($upper) { $charCodes.upper = @{ count = 0; asciiCodes = (65..90) } }
+    if ($numeric) { $charCodes.numeric = @{ count = 0; asciiCodes = (48..57) } }
+    if ($special) { $charCodes.special = @{ count = 0; asciiCodes = (33..47)+(58..64)+(91..96)+(123..126) } }
+
+    $sharePortionArray = [System.Collections.ArrayList]@(get-randomShare -max $length -count $charCodes.Count)
+    $randomCharArray = [System.Collections.ArrayList]@()
+    foreach ($ctype in $charCodes.GetEnumerator()) {
+        #$ctype.Value.asciiCodes | Get-Random -Count $sharePortionArray[0] | % {[char]$_}
+        $ctype.Value.asciiCodes | Get-Random -Count $sharePortionArray[0] | foreach { $randomCharArray.Add($_) | Out-Null }
+        $sharePortionArray.RemoveAt(0)
+    }
+
+    return -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_})
+}
+
