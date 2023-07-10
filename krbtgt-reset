@@ -1,0 +1,71 @@
+<#
+Golden ticket reset
+Pascasl Bourbonnais
+2023-07-10 v1.0
+
+https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/manage/ad-forest-recovery-resetting-the-krbtgt-password
+
+You should perform this operation twice. When resetting the Key Distribution Center Service Account password twice,
+a 10 hour waiting period is required between resets. 
+10 hours are the default Maximum lifetime for user ticket and Maximum lifetime for service ticket policy settings, hence in a case where the Maximum lifetime period has been altered,
+the minimum waiting period between resets should be greater than the configured value.
+https://adsecurity.org/?p=1640
+
+Schedule with:
+%SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe
+-nonInteractive -windowStyle hidden -executionPolicy RemoteSigned -file "C:\windows\SYSVOL\domain\pdc\krbtgt.ps1"
+
+EventID:
+1 "KRBTGT password updated"
+2 "KRBTGT password update failed, password last set within 24 hours"
+3 "KRBTGT password update failed, script must run on PDC emulator"
+4 "KRBTGT password update failed, script must run on PDC emulator"
+
+#>
+
+function Get-RandomPassword {
+param(
+    [parameter(Mandatory=$false,ValueFromPipeline=$true,HelpMessage='Lenght of the output')]
+    [int]$length = 20,
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Caracter set to use, default: All caracter (upper and lowercase), numbers, special: !@#$%&*')]
+    [string]$characters ='abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!@#$%&*',
+    [parameter(Mandatory=$false,ValueFromPipeline=$false,HelpMessage='Copy result to clip board')]
+    [switch]$toClip
+)
+    # make sur it contains at least an uppercase and a number
+    while ($passwd -cnotmatch '[A-Z]' -and $passwd -notmatch '[0-9]' ) {
+ 
+        # select random characters
+        $random = 1..$length | ForEach-Object { Get-Random -Maximum $characters.length }
+        # output random pwd
+        $private:ofs = ""
+        $passwd = [String]$characters[$random]
+    }
+ 
+    if ($toClip) { $passwd | clip }
+    else { return $passwd }
+}
+
+New-EventLog -Source "pdcTasks" -LogName Application -ErrorAction Ignore
+$pdc = Get-ADDomainController -Filter {OperationMasterRoles -like "PDCEmulator"}
+
+$krbtgt = get-aduser krbtgt -properties passwordlastset
+# KRBTGT SID always end with: -502
+if ($krbtgt.sid.value -notmatch "-502$") {
+    Write-EventLog -LogName Application -Source "pdcTasks" -EventId 4 -EntryType Information -Message "KRBTGT password update failed, retrieved KRBTGT SID does not end with -502, $($krbtgt.sid.value)"
+    break
+}
+
+if ($env:ComputerName -eq $pdc.name){
+
+    # only proceed if password is older than 1 day
+    if ([datetime]$krbtgt.passwordlastset -le [datetime]$((get-date).AddDays(-1))) {
+        Write-EventLog -LogName Application -Source "pdcTasks" -EventId 1 -EntryType Information -Message "KRBTGT password updated"
+        set-adaccountpass 
+         $krbtgt
+    } else {
+        Write-EventLog -LogName Application -Source "pdcTasks" -EventId 2 -EntryType Information -Message "KRBTGT password update failed, password last set within 24 hours"
+    }
+} else {
+    Write-EventLog -LogName Application -Source "pdcTasks" -EventId 3 -EntryType Information -Message "KRBTGT password update failed, script must run on PDC emulator"
+}
