@@ -42,6 +42,7 @@ param(
         $sharePortionArray.RemoveAt(0)
     }
 
-    return -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_})
+    if ($toClip) { -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_}) | clip }
+    else { return -join($randomCharArray | Sort-Object {Get-Random} | % {[char]$_}) }
 }
 
