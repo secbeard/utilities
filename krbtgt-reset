@@ -13,7 +13,7 @@ https://adsecurity.org/?p=1640
 
 Schedule with:
 %SystemRoot%\system32\WindowsPowerShell\v1.0\powershell.exe
--nonInteractive -windowStyle hidden -executionPolicy RemoteSigned -file "C:\windows\SYSVOL\domain\pdc\krbtgt.ps1"
+-noprofile -noninteractive -windowstyle hidden -ep RemoteSigned -file "C:\windows\SYSVOL\domain\pdc\krbtgt.ps1"
 
 EventID:
 1 "KRBTGT password updated"
