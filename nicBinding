@@ -1,0 +1,23 @@
+@(Get-NetAdapterBinding -ComponentID ms_lldp).Where({$_.enabled -eq $true})
+@(Get-NetAdapterBinding -ComponentID ms_lltdio).Where({$_.enabled -eq $true})
+@(Get-NetAdapterBinding -ComponentID ms_rspndr).Where({$_.enabled -eq $true})
+@(Get-NetAdapterBinding -ComponentID ms_server).Where({$_.enabled -eq $true})
+
+@(Get-WmiObject -Class win32_networkadapterconfiguration).Where({$_.TcpipNetbiosOptions -ne '2'}) | Select-Object ipaddress,description,TcpipNetbiosOptions
+@(Get-WmiObject -Class win32_networkadapterconfiguration).Where({$_.WINSEnableLMHostsLookup -eq 'true'}) | Select-Object ipaddress,description,WINSEnableLMHostsLookup
+
+
+
+# %systemroot%\system32\WindowsPowerShell\v1.0\powershell.exe
+
+# -command
+
+"@(Get-NetAdapterBinding -ComponentID ms_lldp).Where({$_.enabled -eq $true}) | foreach {Set-NetAdapterBinding -Name $_.name -ComponentID $_.componentID -Enabled $false}"
+"@(Get-NetAdapterBinding -ComponentID ms_lltdio).Where({$_.enabled -eq $true}) | foreach {Set-NetAdapterBinding -Name $_.name -ComponentID $_.componentID -Enabled $false}"
+"@(Get-NetAdapterBinding -ComponentID ms_rspndr).Where({$_.enabled -eq $true}) | foreach {Set-NetAdapterBinding -Name $_.name -ComponentID $_.componentID -Enabled $false}"
+"@(Get-NetAdapterBinding -ComponentID ms_server).Where({$_.enabled -eq $true}) | foreach {Set-NetAdapterBinding -Name $_.name -ComponentID $_.componentID -Enabled $false}"
+
+"@(Get-WmiObject -Class win32_networkadapterconfiguration).Where({$_.TcpipNetbiosOptions -ne '2'}) | foreach { $_.settcpipnetbios(2) }"
+
+"(Get-WmiObject -Class win32_networkadapterconfiguration -List).enableWins($false,$false)"
+
