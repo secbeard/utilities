@@ -7,10 +7,8 @@
 @(Get-WmiObject -Class win32_networkadapterconfiguration).Where({$_.WINSEnableLMHostsLookup -eq 'true'}) | Select-Object ipaddress,description,WINSEnableLMHostsLookup
 
 
-
-# %systemroot%\system32\WindowsPowerShell\v1.0\powershell.exe
-
-# -command
+# Scheduled task: 
+# %systemroot%\system32\WindowsPowerShell\v1.0\powershell.exe -command
 
 "@(Get-NetAdapterBinding -ComponentID ms_lldp).Where({$_.enabled -eq $true}) | foreach {Set-NetAdapterBinding -Name $_.name -ComponentID $_.componentID -Enabled $false}"
 "@(Get-NetAdapterBinding -ComponentID ms_lltdio).Where({$_.enabled -eq $true}) | foreach {Set-NetAdapterBinding -Name $_.name -ComponentID $_.componentID -Enabled $false}"
