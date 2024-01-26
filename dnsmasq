@@ -59,7 +59,58 @@ iface eth1 inet dhcp
         post-up route del default dev $IFACE
 
  
+Docker:
 
- 
-Si jamais il t’en manquait une :
 
+To test:
+From <https://serverfault.com/questions/612075/how-to-configure-custom-dns-server-with-docker> 
+
+
+Configure DNS for all containers, or add the following to the /etc/docker/daemon.json file to set it up.
+ { "dns" : [ "114.114.114.114" , "8.8.8.8" ] } 
+
+
+ $ docker run -it --rm ubuntu:18.04 cat etc/resolv.conf nameserver 114.114.114.114 nameserver 8.8.8.8
+
+From <https://dockerlabs.collabnix.com/intermediate/networking/Configuring_DNS.html> 
+
+
+docker pull kalilinux/kali-rolling
+118MB
+
+
+Cewl:
+cewl -d 1 --lowercase -m 4 
+-u "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/111.0.0.0 Safari/537.36" -w quebec_town.txt https://en.wikipedia.org/wiki/List_of_towns_in_Quebec
+
+cat imdb.txt | sort | uniq | wc -l
+
+tr '[:upper:]' '[:lower:]' < all_words2.txt > all_words3.txt
+
+
+# Converts upper to lower case 
+$ tr '[:upper:]' '[:lower:]' < input.txt > output.txt
+# Converts lower to upper case
+$ tr '[:lower:]' '[:upper:]' < input.txt > output.txt
+
+
+
+journalctl:
+
+https://www.digitalocean.com/community/tutorials/how-to-use-journalctl-to-view-and-manipulate-systemd-logs
+
+journalctl --sinceyesterday
+
+journalctl --since09:00 --until"1 hour ago"
+
+
+iptables:
+iptables -n -t filter -L FORWARD --line-numbers
+
+-A = APPEND
+-I = insert
+
+bash:
+trim white space
+
+https://www.baeldung.com/linux/trim-whitespace-bash-variable
