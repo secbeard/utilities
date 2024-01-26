@@ -1,0 +1,65 @@
+Edit the /etc/default/grub configuration file
+GRUB_CMDLINE_LINUX_DEFAULT="quiet splash ipv6.disable=1"
+GRUB_CMDLINE_LINUX="ipv6.disable=1"
+
+To make the settings take effect, run command below
+update-grub
+
+
+
+** responder do not work without ipv6
+PythonResponder is the one included with Kali: https://github.com/lgandx/Responder
+
+systemctl disable NetworkManager
+systemctl enable dnsmasq
+ 
+dnsmasq.conf :
+interface=lo
+bind-interfaces
+server=/fondsftq.com/10.1.20.221
+server=/fondsftq.com/10.1.20.222
+ 
+server=/fondsftq.dev/10.1.20.221
+server=/fondsftq.dev/10.1.20.222
+ 
+server=/fondsfed.com/10.1.20.221
+server=/fondsfed.com/10.1.20.222
+ 
+server=/fsdevfed.com/10.1.20.221
+server=/fsdevfed.com/10.1.20.222
+ 
+server=/fondsdev.com/10.1.20.221
+server=/fondsdev.com/10.1.20.222
+
+server=1.1.1.1
+server=1.0.0.1
+ 
+#Add local hostname otherwise Responder doesn't start
+Address=/tactique/127.0.0.1
+
+
+resolv.conf vers 127.0.0.1
+ 
+Modif de /etc/dhcp/dhclient.conf pour ramasser seulement l’essentiel et conserver resolv.conf
+ 
+
+
+
+# The loopback network interface
+auto lo eth0 eth1
+iface lo inet loopback
+
+iface eth0 inet dhcp
+
+iface eth1 inet dhcp
+        metric 254
+        up route add -net 10.0.0.0/8 gw $(ip route | grep default | grep $IFACE | cut -d " " -f 3 )
+        up route add -net 172.16.0.0/12 gw $(ip route | grep default | grep $IFACE | cut -d " " -f 3 )
+        up route add -net 192.168.0.0/16 gw $(ip route | grep default | grep $IFACE | cut -d " " -f 3 )
+        post-up route del default dev $IFACE
+
+ 
+
+ 
+Si jamais il t’en manquait une :
+
